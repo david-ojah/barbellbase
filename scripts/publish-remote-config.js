@@ -81,8 +81,8 @@ async function main() {
   const parameters = template.parameters || {};
 
   const current = parameters.latest_version?.defaultValue?.value;
-  if (current && !isNewer(version, current)) {
-    console.log(`Skipping ${version}: Remote Config already points at ${current}.`);
+  if (current && isNewer(current, version)) {
+    console.log(`Skipping ${version}: Remote Config already points at a newer ${current}.`);
     return;
   }
 
