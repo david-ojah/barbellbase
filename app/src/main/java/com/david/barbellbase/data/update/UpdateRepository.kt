@@ -30,7 +30,9 @@ class UpdateRepository @Inject constructor(
 
     suspend fun download(onProgress: (Float) -> Unit): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
-            val update = preferences.read().update ?: error("No update is available")
+            val update = preferences.read().update
+                ?.takeIf { it.isNewerThan(currentVersion) }
+                ?: error("No update is available")
 
             val directory = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
                 ?: context.cacheDir

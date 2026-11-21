@@ -22,7 +22,19 @@ data class StoredUpdate(
      */
     fun isSuppressed(todayEpochDay: Long): Boolean =
         update != null && skippedTag == update.tag && skippedDay == todayEpochDay
+
+    /**
+     * The stored record can outlive the version it describes: after the user
+     * installs it, the record still exists until the next remote check. Filter
+     * it against the running version so the UI never offers an update that is
+     * already installed.
+     */
+    fun visibleUpdate(currentVersion: String, todayEpochDay: Long): AvailableUpdate? =
+        update?.takeIf { it.isNewerThan(currentVersion) && !isSuppressed(todayEpochDay) }
 }
+
+fun AvailableUpdate.isNewerThan(currentVersion: String): Boolean =
+    UpdateVersion.isNewer(version, currentVersion)
 
 /** Version parsing and comparison for release tags such as "v1.1" and "1.1.2". */
 object UpdateVersion {

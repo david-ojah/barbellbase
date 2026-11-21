@@ -60,7 +60,7 @@ class UpdateBannerViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(preferences.state, today) { stored, day ->
-                stored.update?.takeUnless { stored.isSuppressed(day) }
+                stored.visibleUpdate(repository.currentVersion, day)
             }.collect { update ->
                 _state.update { current ->
                     if (current.downloading) {

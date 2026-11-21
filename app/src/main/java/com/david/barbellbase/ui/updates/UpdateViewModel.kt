@@ -9,6 +9,7 @@ import com.david.barbellbase.data.update.AvailableUpdate
 import com.david.barbellbase.data.update.UpdateInstaller
 import com.david.barbellbase.data.update.UpdatePreferences
 import com.david.barbellbase.data.update.UpdateRepository
+import com.david.barbellbase.data.update.isNewerThan
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,13 +47,15 @@ class UpdateViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val stored = preferences.read()
-            val suppressed = stored.isSuppressed(LocalDate.now().toEpochDay())
+            val today = LocalDate.now().toEpochDay()
+            val hasNewer = stored.update?.isNewerThan(repository.currentVersion) == true
+            val update = stored.visibleUpdate(repository.currentVersion, today)
             _state.update {
                 it.copy(
-                    update = if (suppressed) null else stored.update,
+                    update = update,
                     lastCheckedAt = stored.checkedAt,
-                    upToDate = stored.checkedAt > 0L && stored.update == null,
-                    skippedForToday = suppressed,
+                    upToDate = stored.checkedAt > 0L && update == null,
+                    skippedForToday = hasNewer && stored.isSuppressed(today),
                 )
             }
         }
