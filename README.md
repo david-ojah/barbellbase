@@ -1,6 +1,6 @@
 # BarbellBase
 
-Offline strength-training tracker for Android 16 (Nothing Phone 3a Pro). No account, no cloud, no GPS — everything lives in a local Room database, with JSON/CSV export through the system file picker.
+Offline strength-training tracker for Android. No account, no cloud, no GPS — everything lives in a local Room database, with JSON/CSV export through the system file picker.
 
 ## What it does
 
@@ -46,7 +46,7 @@ Alternatively copy the APK to the phone and open it, allowing "install unknown a
 
 1. Allow **notifications** when prompted (needed for every reminder).
 2. Reminders tab → **Allow exact alarms** so water alarms arrive on time instead of being batched by Doze.
-3. On Nothing OS, set BarbellBase's battery usage to **Unrestricted** (Settings → Apps → BarbellBase → Battery) so Nothing's battery manager does not kill alarm delivery.
+3. If your phone has aggressive battery management, set BarbellBase's battery usage to **Unrestricted** (Settings → Apps → BarbellBase → Battery) so the system does not kill alarm delivery.
 4. Optional: adjust water/walk targets in Settings → Reminder defaults.
 
 ## Notes on alarms
