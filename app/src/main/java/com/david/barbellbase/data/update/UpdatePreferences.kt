@@ -28,7 +28,8 @@ class UpdatePreferences @Inject constructor(
         val sha256 = stringPreferencesKey("sha256")
         val sizeBytes = longPreferencesKey("size_bytes")
         val releaseNotes = stringPreferencesKey("release_notes")
-        val dismissedTag = stringPreferencesKey("dismissed_tag")
+        val skippedTag = stringPreferencesKey("skipped_tag")
+        val skippedDay = longPreferencesKey("skipped_day")
         val notifiedTag = stringPreferencesKey("notified_tag")
     }
 
@@ -36,7 +37,8 @@ class UpdatePreferences @Inject constructor(
         StoredUpdate(
             checkedAt = preferences[Keys.checkedAt] ?: 0L,
             update = readUpdate(preferences),
-            dismissedTag = preferences[Keys.dismissedTag],
+            skippedTag = preferences[Keys.skippedTag],
+            skippedDay = preferences[Keys.skippedDay] ?: 0L,
             notifiedTag = preferences[Keys.notifiedTag],
         )
     }
@@ -46,7 +48,8 @@ class UpdatePreferences @Inject constructor(
         return StoredUpdate(
             checkedAt = preferences[Keys.checkedAt] ?: 0L,
             update = readUpdate(preferences),
-            dismissedTag = preferences[Keys.dismissedTag],
+            skippedTag = preferences[Keys.skippedTag],
+            skippedDay = preferences[Keys.skippedDay] ?: 0L,
             notifiedTag = preferences[Keys.notifiedTag],
         )
     }
@@ -72,7 +75,10 @@ class UpdatePreferences @Inject constructor(
         }
     }
 
-    suspend fun dismiss(tag: String) = context.updateStore.edit { it[Keys.dismissedTag] = tag }
+    suspend fun skip(tag: String, day: Long) = context.updateStore.edit {
+        it[Keys.skippedTag] = tag
+        it[Keys.skippedDay] = day
+    }
 
     suspend fun markNotified(tag: String) = context.updateStore.edit { it[Keys.notifiedTag] = tag }
 

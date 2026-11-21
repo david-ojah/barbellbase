@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class UpdateUiState(
@@ -26,6 +27,7 @@ data class UpdateUiState(
     val update: AvailableUpdate? = null,
     val lastCheckedAt: Long = 0L,
     val upToDate: Boolean = false,
+    val skippedForToday: Boolean = false,
     val downloadedFile: File? = null,
     val needsInstallPermission: Boolean = false,
     val error: String? = null,
@@ -44,11 +46,13 @@ class UpdateViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val stored = preferences.read()
+            val suppressed = stored.isSuppressed(LocalDate.now().toEpochDay())
             _state.update {
                 it.copy(
-                    update = stored.update,
+                    update = if (suppressed) null else stored.update,
                     lastCheckedAt = stored.checkedAt,
                     upToDate = stored.checkedAt > 0L && stored.update == null,
+                    skippedForToday = suppressed,
                 )
             }
         }
@@ -65,6 +69,7 @@ class UpdateViewModel @Inject constructor(
                             checking = false,
                             update = update,
                             upToDate = update == null,
+                            skippedForToday = false,
                             lastCheckedAt = System.currentTimeMillis(),
                         )
                     }
@@ -121,10 +126,17 @@ class UpdateViewModel @Inject constructor(
         if (allowed) install()
     }
 
-    fun dismiss() {
+    fun skip() {
         val tag = _state.value.update?.tag ?: return
-        viewModelScope.launch { preferences.dismiss(tag) }
-        _state.update { it.copy(update = null, downloadedFile = null, progress = 0f) }
+        viewModelScope.launch { preferences.skip(tag, LocalDate.now().toEpochDay()) }
+        _state.update {
+            it.copy(
+                update = null,
+                downloadedFile = null,
+                progress = 0f,
+                skippedForToday = true,
+            )
+        }
     }
 
     fun openReleasePage() {

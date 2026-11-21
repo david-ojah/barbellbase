@@ -3,6 +3,7 @@ package com.david.barbellbase.data.update
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import java.time.LocalDate
 
 class UpdateWorker(
     context: Context,
@@ -17,7 +18,8 @@ class UpdateWorker(
         if (update != null) {
             val preferences = entryPoint.updatePreferences()
             val stored = preferences.read()
-            if (stored.dismissedTag != update.tag && stored.notifiedTag != update.tag) {
+            val today = LocalDate.now().toEpochDay()
+            if (!stored.isSuppressed(today) && stored.notifiedTag != update.tag) {
                 UpdateNotifications.notify(applicationContext, update)
                 preferences.markNotified(update.tag)
             }

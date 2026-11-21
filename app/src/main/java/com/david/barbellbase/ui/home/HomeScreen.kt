@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,7 @@ import com.david.barbellbase.ui.components.Pill
 import com.david.barbellbase.ui.components.ProgressRing
 import com.david.barbellbase.ui.components.SectionTitle
 import com.david.barbellbase.ui.components.StatTile
+import com.david.barbellbase.ui.updates.UpdateBanner
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -48,11 +50,12 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LazyColumn(
-        modifier.fillMaxWidth(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 24.dp, 20.dp, 32.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
+    Column(modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 24.dp, 20.dp, 32.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
         item {
             Row(
                 Modifier.fillMaxWidth(),
@@ -241,5 +244,11 @@ fun HomeScreen(
                 }
             }
         }
+
+        }
+
+        UpdateBanner(
+            Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
+        )
     }
 }

@@ -25,8 +25,8 @@ android {
         applicationId = "com.david.barbellbase"
         minSdk = 35
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 4
+        versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Optional cloud-sync configuration. Fill these in local.properties (never committed).

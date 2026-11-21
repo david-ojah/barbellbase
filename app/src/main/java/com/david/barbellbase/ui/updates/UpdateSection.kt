@@ -44,6 +44,7 @@ fun UpdateSection(viewModel: UpdateViewModel = hiltViewModel()) {
             Text(
                 when {
                     state.checking -> "Checking for updates..."
+                    state.skippedForToday -> "Update skipped for today. It will appear again tomorrow."
                     state.upToDate -> "You're on the latest version."
                     else -> "Check for a newer build. Updates install over the current app."
                 },
@@ -129,7 +130,7 @@ fun UpdateSection(viewModel: UpdateViewModel = hiltViewModel()) {
                 Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                TextButton(onClick = viewModel::dismiss) { Text("Later") }
+                TextButton(onClick = viewModel::skip) { Text("Skip today") }
                 TextButton(onClick = viewModel::openReleasePage) { Text("Release notes") }
                 TextButton(onClick = viewModel::check, enabled = !state.checking) {
                     Text(if (state.checking) "Checking..." else "Re-check")

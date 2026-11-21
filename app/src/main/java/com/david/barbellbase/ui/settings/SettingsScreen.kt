@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.david.barbellbase.BuildConfig
 import com.david.barbellbase.data.prefs.ThemeMode
 import com.david.barbellbase.data.prefs.UnitSystem
 import com.david.barbellbase.domain.Units
@@ -411,7 +412,7 @@ fun SettingsScreen(
                     SectionTitle("About")
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "BarbellBase 1.0 · offline strength tracker for Android",
+                        "BarbellBase ${BuildConfig.VERSION_NAME} · offline strength tracker for Android",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(

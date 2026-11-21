@@ -79,7 +79,7 @@ Built-in exercises are seeded identically on every install, so untouched ones ar
 
 ## In-app updates
 
-BarbellBase checks Firebase Remote Config once a day and can download and install a newer APK from Settings → **Updates**.
+BarbellBase checks Firebase Remote Config once a day and can download and install a newer APK from Settings → **Updates**. When a release is available, a banner at the bottom of the Home screen offers **Download** or **Skip**; skipping hides it for the rest of the local calendar day, and it returns the next day.
 
 When a GitHub release is published, `.github/workflows/publish-update-config.yml` copies the release's version, APK URL, size, SHA-256 digest and notes into these Remote Config parameters: `latest_version`, `latest_tag`, `apk_url`, `apk_sha256`, `apk_size_bytes`, `release_notes`. The app then downloads directly from GitHub, verifies the SHA-256, and opens the system installer.
 

@@ -12,9 +12,17 @@ data class AvailableUpdate(
 data class StoredUpdate(
     val checkedAt: Long = 0L,
     val update: AvailableUpdate? = null,
-    val dismissedTag: String? = null,
+    val skippedTag: String? = null,
+    val skippedDay: Long = 0L,
     val notifiedTag: String? = null,
-)
+) {
+    /**
+     * A skipped update stays hidden for the rest of the local calendar day.
+     * The next day, or a newer release, makes it visible again.
+     */
+    fun isSuppressed(todayEpochDay: Long): Boolean =
+        update != null && skippedTag == update.tag && skippedDay == todayEpochDay
+}
 
 /** Version parsing and comparison for release tags such as "v1.1" and "1.1.2". */
 object UpdateVersion {

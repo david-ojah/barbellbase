@@ -1,6 +1,7 @@
 package com.david.barbellbase.data.repo
 
 import androidx.room.withTransaction
+import com.david.barbellbase.BuildConfig
 import com.david.barbellbase.data.db.BodyDao
 import com.david.barbellbase.data.db.BodyMetricEntity
 import com.david.barbellbase.data.db.ExerciseDao
@@ -70,6 +71,7 @@ class BackupRepository @Inject constructor(
 
     suspend fun exportJson(): String {
         val payload = BackupPayload(
+            appVersion = BuildConfig.VERSION_NAME,
             exercises = exerciseDao.getAll(),
             routines = routineDao.getAllRoutines(),
             routineDays = routineDao.getAllDays(),
