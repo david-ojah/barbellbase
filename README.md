@@ -13,6 +13,7 @@ Offline-first strength-training tracker for Android. Everything lives in a local
 - **Habits** — water and walking logs feed the reminder notifications, with 14-day mini charts.
 - **Settings** — kg/lb, theme (dynamic/mono/dark/light), week start, weight step, rest defaults, water/walk targets, JSON export/import, CSV export.
 - **Optional cloud sync** — sign in with Google to keep workouts, routines, exercises, habits and settings in sync across devices. Changes merge per record; offline use is unchanged.
+- **In-app updates** — a daily check against Firebase Remote Config, with in-app download and install of newer APKs (SHA-256 verified).
 
 ## Build
 
@@ -73,6 +74,19 @@ Cloud sync stays disabled until Firebase is configured. It uses Google Sign-In a
 6. Rebuild. A **Cloud sync** section appears in Settings. Sign in with the same Google account on each device.
 
 Sync stores one Firestore document per record under `users/{uid}/records/{table}:{id}` and resolves conflicts per record with last-write-wins. Deletions propagate as tombstones. Reminder rules and events stay device-local because alarms must be armed on each device.
+
+## In-app updates
+
+BarbellBase checks Firebase Remote Config once a day and can download and install a newer APK from Settings → **Updates**.
+
+When a GitHub release is published, `.github/workflows/publish-update-config.yml` copies the release's version, APK URL, size, SHA-256 digest and notes into these Remote Config parameters: `latest_version`, `latest_tag`, `apk_url`, `apk_sha256`, `apk_size_bytes`, `release_notes`. The app then downloads directly from GitHub, verifies the SHA-256, and opens the system installer.
+
+One-time setup for automatic publishing:
+
+1. Firebase Console → Project settings → **Service accounts** → *Generate new private key*.
+2. GitHub repo → **Settings → Secrets and variables → Actions** → add a secret named `FIREBASE_SERVICE_ACCOUNT` containing that JSON.
+
+The first update also needs **Install unknown apps** permission for BarbellBase; the app links to the correct settings screen.
 
 ## First-run checklist
 

@@ -3,6 +3,7 @@ package com.david.barbellbase
 import android.app.Application
 import com.david.barbellbase.data.sync.SyncConfig
 import com.david.barbellbase.data.sync.SyncScheduler
+import com.david.barbellbase.data.update.UpdateScheduler
 import com.david.barbellbase.di.Seeder
 import com.david.barbellbase.reminder.NotificationChannels
 import com.david.barbellbase.reminder.ReminderReconcileWorker
@@ -26,6 +27,7 @@ class BarbellBaseApp : Application() {
         super.onCreate()
         NotificationChannels.createAll(this)
         SyncScheduler.schedule(this)
+        UpdateScheduler.schedule(this)
         appScope.launch {
             seeder.seed()
             ReminderReconcileWorker.enqueue(this@BarbellBaseApp)

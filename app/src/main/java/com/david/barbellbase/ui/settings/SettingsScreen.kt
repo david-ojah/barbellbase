@@ -51,6 +51,7 @@ import com.david.barbellbase.domain.Units
 import com.david.barbellbase.ui.components.AppCard
 import com.david.barbellbase.ui.components.Pill
 import com.david.barbellbase.ui.components.SectionTitle
+import com.david.barbellbase.ui.updates.UpdateSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -363,6 +364,10 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+
+            item {
+                UpdateSection()
             }
 
             item {

@@ -20,6 +20,7 @@ object NotificationChannels {
     const val SILENT = "reminder_silent"
     const val REST = "rest_timer"
     const val WORKOUT = "workout_session"
+    const val UPDATES = "app_updates"
 
     fun createAll(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -96,7 +97,16 @@ object NotificationChannels {
             setShowBadge(false)
         }
 
-        manager.createNotificationChannels(listOf(alarm, fallback, chime, silent, rest, workout))
+        val updates = NotificationChannel(
+            UPDATES,
+            "App updates",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "New BarbellBase versions available to install"
+            setShowBadge(true)
+        }
+
+        manager.createNotificationChannels(listOf(alarm, fallback, chime, silent, rest, workout, updates))
     }
 
     fun channelFor(sound: AlertSound, fallbackAlarm: Boolean = false): String = when (sound) {
