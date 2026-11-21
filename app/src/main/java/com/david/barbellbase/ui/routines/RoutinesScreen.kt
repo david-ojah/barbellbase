@@ -57,6 +57,7 @@ import com.david.barbellbase.ui.components.SectionTitle
 @Composable
 fun RoutinesScreen(
     onOpenRoutine: (String) -> Unit,
+    onBrowseTemplates: () -> Unit,
     onBack: () -> Unit,
     viewModel: RoutinesViewModel = hiltViewModel(),
 ) {
@@ -70,6 +71,9 @@ fun RoutinesScreen(
                 title = { Text("Routines") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                },
+                actions = {
+                    TextButton(onClick = onBrowseTemplates) { Text("Templates") }
                 },
             )
         },
@@ -91,7 +95,13 @@ fun RoutinesScreen(
                     EmptyState(
                         title = "No routines yet",
                         message = "A routine is a list of days. Each day is a list of exercises with set and rep targets.",
-                        action = { Button(onClick = { showCreate = true }) { Text("Create your first routine") } },
+                        action = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Button(onClick = { showCreate = true }) { Text("Create your first routine") }
+                                Spacer(Modifier.height(8.dp))
+                                FilledTonalButton(onClick = onBrowseTemplates) { Text("Browse templates") }
+                            }
+                        },
                     )
                 }
             }

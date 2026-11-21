@@ -33,6 +33,7 @@ import com.david.barbellbase.ui.progress.ProgressScreen
 import com.david.barbellbase.ui.reminders.RemindersScreen
 import com.david.barbellbase.ui.routines.DayEditorScreen
 import com.david.barbellbase.ui.routines.RoutineDetailScreen
+import com.david.barbellbase.ui.routines.RoutineTemplatesScreen
 import com.david.barbellbase.ui.routines.RoutinesScreen
 import com.david.barbellbase.ui.settings.SettingsScreen
 import com.david.barbellbase.ui.workout.WorkoutScreen
@@ -44,6 +45,7 @@ object Routes {
     const val REMINDERS = "reminders"
 
     const val ROUTINES = "routines"
+    const val ROUTINE_TEMPLATES = "routine-templates"
     const val ROUTINE = "routine/{routineId}"
     const val DAY = "day/{dayId}"
     const val HISTORY = "history"
@@ -123,7 +125,19 @@ fun BarbellBaseRoot() {
             composable(Routes.ROUTINES) {
                 RoutinesScreen(
                     onOpenRoutine = { id -> navController.navigate(Routes.routine(id)) },
+                    onBrowseTemplates = { navController.navigate(Routes.ROUTINE_TEMPLATES) },
                     onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.ROUTINE_TEMPLATES) {
+                RoutineTemplatesScreen(
+                    onBack = { navController.popBackStack() },
+                    onImported = { id ->
+                        navController.navigate(Routes.routine(id)) {
+                            popUpTo(Routes.ROUTINE_TEMPLATES) { inclusive = true }
+                        }
+                    },
                 )
             }
 
