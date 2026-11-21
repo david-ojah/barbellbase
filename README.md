@@ -75,6 +75,8 @@ Cloud sync stays disabled until Firebase is configured. It uses Google Sign-In a
 
 Sync stores one Firestore document per record under `users/{uid}/records/{table}:{id}` and resolves conflicts per record with last-write-wins. Deletions propagate as tombstones. Reminder rules and events stay device-local because alarms must be armed on each device.
 
+Built-in exercises are seeded identically on every install, so untouched ones are never uploaded; only custom or edited entries sync. The incremental query also excludes the current device's own records, so a repeated sync does not re-read a batch it just wrote. Create a composite index on the `records` collection with `deviceId` (ascending) and `serverUpdatedAt` (ascending) for that query.
+
 ## In-app updates
 
 BarbellBase checks Firebase Remote Config once a day and can download and install a newer APK from Settings → **Updates**.

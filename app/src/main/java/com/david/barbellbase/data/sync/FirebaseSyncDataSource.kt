@@ -95,18 +95,23 @@ class FirebaseSyncDataSource @Inject constructor(
         }
     }
 
-    suspend fun download(since: Long): Result<List<SyncRecord>> = withContext(Dispatchers.IO) {
+    suspend fun download(since: Long, deviceId: String): Result<List<SyncRecord>> = withContext(Dispatchers.IO) {
         runCatching {
             val uid = currentUid() ?: error("Not signed in")
             val collection = FirebaseFirestore.getInstance()
                 .collection("users").document(uid).collection("records")
 
+            // Exclude this device's own records server-side. Without it, the
+            // 5-minute overlap re-reads a whole batch whenever the user syncs
+            // twice in quick succession.
             val query: Query = if (since <= 0L) {
-                collection
+                collection.whereNotEqualTo("deviceId", deviceId)
             } else {
                 val seconds = since / 1000
                 val nanos = ((since % 1000) * 1_000_000).toInt()
-                collection.whereGreaterThan("serverUpdatedAt", Timestamp(seconds, nanos))
+                collection
+                    .whereGreaterThan("serverUpdatedAt", Timestamp(seconds, nanos))
+                    .whereNotEqualTo("deviceId", deviceId)
             }
 
             val snapshot = Tasks.await(query.get())

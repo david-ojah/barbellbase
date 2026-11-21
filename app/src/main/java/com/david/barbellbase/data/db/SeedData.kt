@@ -139,6 +139,18 @@ fun seedExercises(): List<ExerciseEntity> = seeds.map { seed ->
     )
 }
 
+private val builtInExercisesById: Map<String, ExerciseEntity> by lazy {
+    seedExercises().associateBy { it.id }
+}
+
+/**
+ * Built-in exercises are generated identically on every install, so an
+ * untouched row carries no information worth uploading. Only archive state or
+ * other real edits make it worth a cloud write.
+ */
+fun isUnmodifiedBuiltInExercise(exercise: ExerciseEntity): Boolean =
+    builtInExercisesById[exercise.id] == exercise
+
 fun defaultReminderRules(): List<ReminderRuleEntity> = listOf(
     ReminderRuleEntity(
         kind = ReminderKind.WATER,

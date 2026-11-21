@@ -3,7 +3,9 @@ package com.david.barbellbase.data.sync
 import android.content.Intent
 import androidx.room.withTransaction
 import com.david.barbellbase.data.db.BarbellBaseDatabase
+import com.david.barbellbase.data.db.ExerciseEntity
 import com.david.barbellbase.data.db.SyncChangeDao
+import com.david.barbellbase.data.db.isUnmodifiedBuiltInExercise
 import com.david.barbellbase.data.prefs.DurableSettings
 import com.david.barbellbase.data.prefs.SettingsRepository
 import kotlinx.serialization.json.Json
@@ -44,7 +46,7 @@ class SyncRepository @Inject constructor(
         val lastSyncedAt = settings.lastSyncedAt()
         var downloaded = 0
 
-        val remoteRecords = remote.download(SyncPolicy.overlapSince(lastSyncedAt)).getOrThrow()
+        val remoteRecords = remote.download(SyncPolicy.overlapSince(lastSyncedAt), deviceId).getOrThrow()
         db.withTransaction {
             remoteRecords
                 .filter { it.deviceId != deviceId }
@@ -61,6 +63,7 @@ class SyncRepository @Inject constructor(
 
         val toUpload = mutableListOf<SyncRecord>()
         val exhausted = mutableListOf<Pair<String, String>>()
+        val redundant = mutableListOf<Pair<String, String>>()
         syncChangeDao.getAll().forEach { change ->
             if (change.deleted) {
                 toUpload += SyncRecord(
@@ -73,10 +76,11 @@ class SyncRepository @Inject constructor(
                 )
             } else {
                 val payload = mapper.load(change.entityType, change.entityId)
-                if (payload == null) {
-                    exhausted += change.entityType to change.entityId
-                } else {
-                    toUpload += SyncRecord(
+                when {
+                    payload == null -> exhausted += change.entityType to change.entityId
+                    isRedundantBuiltIn(change.entityType, payload) ->
+                        redundant += change.entityType to change.entityId
+                    else -> toUpload += SyncRecord(
                         entityType = change.entityType,
                         entityId = change.entityId,
                         payload = payload,
@@ -88,9 +92,10 @@ class SyncRepository @Inject constructor(
             }
         }
 
-        if (exhausted.isNotEmpty()) {
+        if (exhausted.isNotEmpty() || redundant.isNotEmpty()) {
             db.withTransaction {
                 exhausted.forEach { (type, id) -> syncChangeDao.clear(type, id) }
+                redundant.forEach { (type, id) -> syncChangeDao.clear(type, id) }
             }
         }
 
@@ -132,5 +137,19 @@ class SyncRepository @Inject constructor(
             remote.uploadSettings(payload, localChangedAt, deviceId).getOrThrow()
             settings.setLastSyncedSettingsAt(localChangedAt)
         }
+    }
+
+    /**
+     * The exercise library is seeded identically on every install. Uploading
+     * unchanged built-ins would cost a write per seed exercise on first sync,
+     * so those pending changes are dropped. Archived or edited entries differ
+     * from the seed and still upload normally.
+     */
+    private fun isRedundantBuiltIn(entityType: String, payload: String): Boolean {
+        if (entityType != SyncEntityTypes.EXERCISES) return false
+        val exercise = runCatching {
+            json.decodeFromString(ExerciseEntity.serializer(), payload)
+        }.getOrNull() ?: return false
+        return isUnmodifiedBuiltInExercise(exercise)
     }
 }
