@@ -13,7 +13,7 @@ object UpdateScheduler {
     private const val WORK_NAME = "barbellbase-update-check"
 
     fun schedule(context: Context) {
-        if (!SyncConfig.isConfigured) return
+        if (!SyncConfig.isFirebaseConfigured) return
 
         val request = PeriodicWorkRequestBuilder<UpdateWorker>(24, TimeUnit.HOURS)
             .setConstraints(

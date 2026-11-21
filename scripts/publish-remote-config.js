@@ -1,6 +1,7 @@
 /*
  * Publishes release metadata to Firebase Remote Config so the in-app updater
- * can check for updates without hitting the GitHub API from every device.
+ * can check for updates without hitting the GitHub API from every device, then
+ * sends a silent update signal to subscribed apps.
  *
  * Required environment variables:
  *   FIREBASE_SERVICE_ACCOUNT  service-account JSON (GitHub Actions secret)
@@ -100,6 +101,27 @@ async function main() {
   template.parameters = parameters;
   await remoteConfig.publishTemplate(template);
   console.log(`Published Remote Config for ${RELEASE_TAG} (${version}).`);
+
+  // Wake subscribed apps so they refresh Remote Config immediately instead of
+  // waiting for the daily worker. This is only a signal; metadata comes from
+  // Remote Config. A push failure must not roll back the release metadata.
+  try {
+    const messageId = await admin.messaging().send({
+      topic: "update-available",
+      data: {
+        type: "update_available",
+        version,
+        tag: RELEASE_TAG,
+      },
+      android: {
+        priority: "high",
+        ttl: 60 * 60 * 1000,
+      },
+    });
+    console.log(`Sent update push ${messageId}.`);
+  } catch (error) {
+    console.error(`Update push failed: ${error.message}`);
+  }
 }
 
 main().catch((error) => fail(error.stack || String(error)));

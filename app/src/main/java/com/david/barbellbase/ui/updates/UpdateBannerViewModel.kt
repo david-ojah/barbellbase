@@ -77,14 +77,6 @@ class UpdateBannerViewModel @Inject constructor(
                 }
             }
         }
-
-        viewModelScope.launch {
-            val stored = preferences.read()
-            val age = System.currentTimeMillis() - stored.checkedAt
-            if (stored.checkedAt == 0L || age > CHECK_INTERVAL_MS) {
-                repository.check(manual = false)
-            }
-        }
     }
 
     fun download() {
@@ -140,9 +132,5 @@ class UpdateBannerViewModel @Inject constructor(
                 error = null,
             )
         }
-    }
-
-    companion object {
-        private const val CHECK_INTERVAL_MS = 12L * 60 * 60 * 1000
     }
 }

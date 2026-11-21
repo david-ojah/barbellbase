@@ -30,7 +30,7 @@ class RemoteConfigUpdateSource @Inject constructor(
 
     suspend fun fetch(manual: Boolean): Result<AvailableUpdate?> = withContext(Dispatchers.IO) {
         runCatching {
-            if (!SyncConfig.isConfigured) return@runCatching null
+            if (!SyncConfig.isFirebaseConfigured) return@runCatching null
 
             val config = FirebaseRemoteConfig.getInstance()
             Tasks.await(config.setDefaultsAsync(defaults))

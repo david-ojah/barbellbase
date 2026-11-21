@@ -80,6 +80,11 @@ class UpdatePreferences @Inject constructor(
         it[Keys.skippedDay] = day
     }
 
+    suspend fun clearSkip() = context.updateStore.edit {
+        it.remove(Keys.skippedTag)
+        it.remove(Keys.skippedDay)
+    }
+
     suspend fun markNotified(tag: String) = context.updateStore.edit { it[Keys.notifiedTag] = tag }
 
     private fun readUpdate(preferences: Preferences): AvailableUpdate? {

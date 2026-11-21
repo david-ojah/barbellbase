@@ -57,9 +57,10 @@ Cloud sync stays disabled until Firebase is configured. It uses Google Sign-In a
    firebase.projectId=your-project-id
    firebase.applicationId=1:1234567890:android:abcdef
    firebase.apiKey=AIza...
+   firebase.senderId=1234567890
    google.webClientId=1234567890-abc.apps.googleusercontent.com
    ```
-   `google.webClientId` is the **Web client** OAuth ID shown under Authentication → Google → Web SDK configuration.
+   `firebase.senderId` is the numeric **project number** from Project settings → General; it enables the update push topic. `google.webClientId` is the **Web client** OAuth ID shown under Authentication → Google → Web SDK configuration.
 5. Publish Firestore rules that scope data to the signed-in user:
    ```
    rules_version = '2';
@@ -82,6 +83,8 @@ Built-in exercises are seeded identically on every install, so untouched ones ar
 BarbellBase checks Firebase Remote Config once a day and can download and install a newer APK from Settings → **Updates**. When a release is available, a banner at the bottom of the Home screen offers **Download** or **Skip**; skipping hides it for the rest of the local calendar day, and it returns the next day.
 
 When a GitHub release is published, `.github/workflows/publish-update-config.yml` copies the release's version, APK URL, size, SHA-256 digest and notes into these Remote Config parameters: `latest_version`, `latest_tag`, `apk_url`, `apk_sha256`, `apk_size_bytes`, `release_notes`. The app then downloads directly from GitHub, verifies the SHA-256, and opens the system installer.
+
+After publishing the metadata, the same workflow sends a silent Cloud Messaging signal to the `update-available` topic. Subscribed apps run an immediate Remote Config check, so the Home banner and Settings card update without a manual re-check. A daily WorkManager check and a once-per-session app-open check remain as fallbacks when a push is missed or the device has no Play Services. The service account used by the workflow must be allowed to send Cloud Messaging; the Firebase Admin SDK service-agent role includes it.
 
 One-time setup for automatic publishing:
 

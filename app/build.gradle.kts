@@ -25,14 +25,15 @@ android {
         applicationId = "com.david.barbellbase"
         minSdk = 35
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.2.1"
+        versionCode = 6
+        versionName = "1.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Optional cloud-sync configuration. Fill these in local.properties (never committed).
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localValue("firebase.projectId")}\"")
         buildConfigField("String", "FIREBASE_APPLICATION_ID", "\"${localValue("firebase.applicationId")}\"")
         buildConfigField("String", "FIREBASE_API_KEY", "\"${localValue("firebase.apiKey")}\"")
+        buildConfigField("String", "FIREBASE_SENDER_ID", "\"${localValue("firebase.senderId")}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localValue("google.webClientId")}\"")
     }
 
@@ -117,6 +118,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.config)
+    implementation(libs.firebase.messaging)
     implementation(libs.play.services.auth)
 
     testImplementation(libs.junit)

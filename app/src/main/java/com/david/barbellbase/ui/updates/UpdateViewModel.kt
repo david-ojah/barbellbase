@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.david.barbellbase.data.update.AvailableUpdate
+import com.david.barbellbase.data.update.StoredUpdate
 import com.david.barbellbase.data.update.UpdateInstaller
 import com.david.barbellbase.data.update.UpdatePreferences
 import com.david.barbellbase.data.update.UpdateRepository
@@ -46,18 +47,25 @@ class UpdateViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val stored = preferences.read()
-            val today = LocalDate.now().toEpochDay()
-            val hasNewer = stored.update?.isNewerThan(repository.currentVersion) == true
-            val update = stored.visibleUpdate(repository.currentVersion, today)
-            _state.update {
-                it.copy(
-                    update = update,
-                    lastCheckedAt = stored.checkedAt,
-                    upToDate = stored.checkedAt > 0L && update == null,
-                    skippedForToday = hasNewer && stored.isSuppressed(today),
-                )
-            }
+            preferences.state.collect { stored -> applyStored(stored) }
+        }
+    }
+
+    /**
+     * Keeps Settings in step with pushes and background checks. Without this,
+     * the card only refreshed when it was first opened or manually re-checked.
+     */
+    private fun applyStored(stored: StoredUpdate) {
+        val today = LocalDate.now().toEpochDay()
+        val hasNewer = stored.update?.isNewerThan(repository.currentVersion) == true
+        val update = stored.visibleUpdate(repository.currentVersion, today)
+        _state.update { current ->
+            current.copy(
+                update = if (current.downloading) current.update else update,
+                lastCheckedAt = stored.checkedAt,
+                upToDate = stored.checkedAt > 0L && update == null,
+                skippedForToday = hasNewer && stored.isSuppressed(today),
+            )
         }
     }
 
@@ -65,17 +73,10 @@ class UpdateViewModel @Inject constructor(
         if (_state.value.checking) return
         viewModelScope.launch {
             _state.update { it.copy(checking = true, error = null, downloadedFile = null) }
+            preferences.clearSkip()
             repository.check(manual = true)
-                .onSuccess { update ->
-                    _state.update {
-                        it.copy(
-                            checking = false,
-                            update = update,
-                            upToDate = update == null,
-                            skippedForToday = false,
-                            lastCheckedAt = System.currentTimeMillis(),
-                        )
-                    }
+                .onSuccess {
+                    _state.update { current -> current.copy(checking = false) }
                 }
                 .onFailure { error ->
                     _state.update {

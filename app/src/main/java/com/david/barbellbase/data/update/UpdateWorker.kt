@@ -3,7 +3,6 @@ package com.david.barbellbase.data.update
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import java.time.LocalDate
 
 class UpdateWorker(
     context: Context,
@@ -11,20 +10,15 @@ class UpdateWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val entryPoint = applicationContext.updateEntryPoint()
-        val result = entryPoint.updateRepository().check(manual = false)
-        val update = result.getOrNull()
+        val manual = inputData.getBoolean(KEY_MANUAL, false)
+        return runCatching {
+            UpdateNotifier.checkAndNotify(applicationContext, manual)
+            Result.success()
+        }.getOrElse { Result.retry() }
+    }
 
-        if (update != null) {
-            val preferences = entryPoint.updatePreferences()
-            val stored = preferences.read()
-            val today = LocalDate.now().toEpochDay()
-            if (!stored.isSuppressed(today) && stored.notifiedTag != update.tag) {
-                UpdateNotifications.notify(applicationContext, update)
-                preferences.markNotified(update.tag)
-            }
-        }
-
-        return Result.success()
+    companion object {
+        /** Set by the push receiver to bypass the remote-config cache. */
+        const val KEY_MANUAL = "manual"
     }
 }
