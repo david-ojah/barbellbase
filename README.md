@@ -64,3 +64,7 @@ Alternatively copy the APK to the phone and open it, allowing "install unknown a
 - CSV export writes one row per completed set.
 - Settings → **Reset tracked data** permanently clears workout sessions and sets, bodyweight entries, water/walk logs and reminder history (plus any in-progress session and rest timer). The exercise library, routines, reminder rules and settings are kept, and armed reminders stay armed. It confirms first and cannot be undone, so export a JSON backup beforehand if the history matters.
 - Uninstalling deletes everything.
+
+## License
+
+[MIT](LICENSE)
