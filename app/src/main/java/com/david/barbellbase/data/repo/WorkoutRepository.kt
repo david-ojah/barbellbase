@@ -231,14 +231,14 @@ class WorkoutRepository @Inject constructor(
 
     suspend fun discardSession(sessionId: String) {
         db.withTransaction {
-            sessionDao.deleteSession(sessionId)
+            sessionDao.deleteSessionCascade(sessionId)
             settings.setActiveSession(null)
             settings.setRest(null, 0)
         }
     }
 
     suspend fun deleteSession(sessionId: String) {
-        sessionDao.deleteSession(sessionId)
+        sessionDao.deleteSessionCascade(sessionId)
     }
 
     suspend fun renameSession(sessionId: String, name: String) {

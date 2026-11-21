@@ -69,7 +69,7 @@ class RoutineRepository @Inject constructor(
         dao.upsertRoutine(routine.copy(name = name))
     }
 
-    suspend fun deleteRoutine(id: String) = dao.deleteRoutine(id)
+    suspend fun deleteRoutine(id: String) = dao.deleteRoutineCascade(id)
 
     suspend fun addDay(routineId: String): String {
         return db.withTransaction {
@@ -85,7 +85,7 @@ class RoutineRepository @Inject constructor(
         dao.upsertDay(day.copy(name = name))
     }
 
-    suspend fun deleteDay(dayId: String) = dao.deleteDay(dayId)
+    suspend fun deleteDay(dayId: String) = dao.deleteDayCascade(dayId)
 
     suspend fun addExerciseToDay(
         dayId: String,

@@ -1,4 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun localValue(key: String): String = localProperties.getProperty(key, "").trim()
 
 plugins {
     alias(libs.plugins.android.application)
@@ -20,13 +28,19 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Optional cloud-sync configuration. Fill these in local.properties (never committed).
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localValue("firebase.projectId")}\"")
+        buildConfigField("String", "FIREBASE_APPLICATION_ID", "\"${localValue("firebase.applicationId")}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${localValue("firebase.apiKey")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localValue("google.webClientId")}\"")
     }
 
     signingConfigs {
         create("sideload") {
-            storeFile = File(System.getProperty("user.home"), ".android/debug.keystore")
+            storeFile = rootProject.file("app/debug.keystore")
             storePassword = "android"
-            keyAlias = "androiddebugkey"
+            keyAlias = "barbellbase-debug"
             keyPassword = "android"
         }
     }
@@ -98,6 +112,11 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.work.runtime.ktx)
     implementation(libs.kotlinx.serialization.json)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.play.services.auth)
 
     testImplementation(libs.junit)
 }

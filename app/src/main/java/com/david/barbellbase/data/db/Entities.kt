@@ -2,6 +2,7 @@ package com.david.barbellbase.data.db
 
 import androidx.room.Entity
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.UUID
@@ -197,7 +198,8 @@ data class ReminderEventEntity(
 @Serializable
 @Entity(tableName = "habit_logs", indices = [Index("kind"), Index("loggedAt")])
 data class HabitLogEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @Serializable(with = HabitLogIdSerializer::class)
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val kind: HabitKind,
     val amountMl: Int? = null,
     val durationMin: Int? = null,
@@ -205,3 +207,33 @@ data class HabitLogEntity(
     val source: LogSource = LogSource.APP,
     val note: String = "",
 )
+
+/**
+ * Records local changes for cloud sync. Rows are written by SQLite triggers, so
+ * every insert/update/delete is captured without instrumenting each repository.
+ */
+@Serializable
+@Entity(tableName = "sync_changes", primaryKeys = ["entityType", "entityId"])
+data class SyncChangeEntity(
+    val entityType: String,
+    val entityId: String,
+    val changedAt: Long,
+    val deleted: Boolean = false,
+)
+
+/**
+ * Older backups stored habit log ids as numbers. Accept both forms so v1.0
+ * exports can still be imported after ids became UUID strings.
+ */
+object HabitLogIdSerializer : kotlinx.serialization.json.JsonTransformingSerializer<String>(
+    String.serializer(),
+) {
+    override fun transformDeserialize(
+        element: kotlinx.serialization.json.JsonElement,
+    ): kotlinx.serialization.json.JsonElement =
+        if (element is kotlinx.serialization.json.JsonPrimitive && !element.isString) {
+            kotlinx.serialization.json.JsonPrimitive(element.content)
+        } else {
+            element
+        }
+}

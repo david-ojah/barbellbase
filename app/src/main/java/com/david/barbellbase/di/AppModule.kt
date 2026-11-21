@@ -6,9 +6,12 @@ import com.david.barbellbase.data.db.BodyDao
 import com.david.barbellbase.data.db.ExerciseDao
 import com.david.barbellbase.data.db.HabitDao
 import com.david.barbellbase.data.db.BarbellBaseDatabase
+import com.david.barbellbase.data.db.MIGRATION_1_2
 import com.david.barbellbase.data.db.ReminderDao
 import com.david.barbellbase.data.db.RoutineDao
 import com.david.barbellbase.data.db.SessionDao
+import com.david.barbellbase.data.db.SyncChangeDao
+import com.david.barbellbase.data.db.SyncDatabaseCallback
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +26,10 @@ object AppModule {
     @Provides
     @Singleton
     fun database(@ApplicationContext context: Context): BarbellBaseDatabase =
-        Room.databaseBuilder(context, BarbellBaseDatabase::class.java, "barbellbase.db").build()
+        Room.databaseBuilder(context, BarbellBaseDatabase::class.java, "barbellbase.db")
+            .addMigrations(MIGRATION_1_2)
+            .addCallback(SyncDatabaseCallback)
+            .build()
 
     @Provides
     fun exerciseDao(db: BarbellBaseDatabase): ExerciseDao = db.exerciseDao()
@@ -42,4 +48,7 @@ object AppModule {
 
     @Provides
     fun bodyDao(db: BarbellBaseDatabase): BodyDao = db.bodyDao()
+
+    @Provides
+    fun syncChangeDao(db: BarbellBaseDatabase): SyncChangeDao = db.syncChangeDao()
 }

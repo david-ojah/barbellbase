@@ -23,6 +23,8 @@ captures/
 *.jks
 *.keystore
 keystore.properties
+# Exception: the committed debug keystore keeps sideloaded builds' SHA-1 stable
+!app/debug.keystore
 
 # Logs
 *.log

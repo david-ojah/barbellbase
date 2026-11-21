@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -35,6 +36,9 @@ interface ExerciseDao {
 
     @Query("SELECT * FROM exercises ORDER BY name COLLATE NOCASE")
     suspend fun getAll(): List<ExerciseEntity>
+
+    @Query("DELETE FROM exercises WHERE id = :id")
+    suspend fun deleteById(id: String)
 
     @Query("DELETE FROM exercises")
     suspend fun clearAll()
@@ -75,6 +79,9 @@ interface RoutineDao {
     @Query("SELECT * FROM routine_exercises WHERE dayId = :dayId ORDER BY position")
     suspend fun getDayExercises(dayId: String): List<RoutineExerciseEntity>
 
+    @Query("SELECT * FROM routine_exercises WHERE id = :id")
+    suspend fun getDayExercise(id: String): RoutineExerciseEntity?
+
     @Query("SELECT * FROM routine_exercises ORDER BY dayId, position")
     fun observeAllDayExercises(): Flow<List<RoutineExerciseEntity>>
 
@@ -105,8 +112,32 @@ interface RoutineDao {
     @Query("DELETE FROM routines WHERE id = :routineId")
     suspend fun deleteRoutine(routineId: String)
 
+    @Query("DELETE FROM routine_exercises WHERE dayId IN (SELECT id FROM routine_days WHERE routineId = :routineId)")
+    suspend fun deleteExercisesForRoutine(routineId: String)
+
+    @Query("DELETE FROM routine_days WHERE routineId = :routineId")
+    suspend fun deleteDaysForRoutine(routineId: String)
+
+    /** Deletes children explicitly so sync triggers capture tombstones for each row. */
+    @Transaction
+    suspend fun deleteRoutineCascade(routineId: String) {
+        deleteExercisesForRoutine(routineId)
+        deleteDaysForRoutine(routineId)
+        deleteRoutine(routineId)
+    }
+
     @Query("DELETE FROM routine_days WHERE id = :dayId")
     suspend fun deleteDay(dayId: String)
+
+    @Query("DELETE FROM routine_exercises WHERE dayId = :dayId")
+    suspend fun deleteExercisesForDay(dayId: String)
+
+    /** Deletes children explicitly so sync triggers capture tombstones for each row. */
+    @Transaction
+    suspend fun deleteDayCascade(dayId: String) {
+        deleteExercisesForDay(dayId)
+        deleteDay(dayId)
+    }
 
     @Query("DELETE FROM routine_exercises WHERE id = :id")
     suspend fun deleteDayExercise(id: String)
@@ -219,6 +250,16 @@ interface SessionDao {
     @Query("DELETE FROM sessions WHERE id = :id")
     suspend fun deleteSession(id: String)
 
+    @Query("DELETE FROM set_entries WHERE sessionId = :sessionId")
+    suspend fun deleteSetsForSession(sessionId: String)
+
+    /** Deletes children explicitly so sync triggers capture tombstones for each row. */
+    @Transaction
+    suspend fun deleteSessionCascade(id: String) {
+        deleteSetsForSession(id)
+        deleteSession(id)
+    }
+
     @Query("SELECT COUNT(*) FROM set_entries WHERE sessionId = :sessionId AND completedAt IS NOT NULL")
     suspend fun completedSetCount(sessionId: String): Int
 
@@ -270,22 +311,19 @@ interface HabitDao {
     @Query("SELECT COALESCE(SUM(durationMin),0) FROM habit_logs WHERE kind = 'WALK' AND loggedAt >= :from AND loggedAt < :to")
     fun observeWalkTotal(from: Long, to: Long): Flow<Int>
 
-    @Insert
-    suspend fun insert(log: HabitLogEntity): Long
+    @Upsert
+    suspend fun insert(log: HabitLogEntity)
 
     @Insert
     suspend fun insertAll(logs: List<HabitLogEntity>)
 
     @Query("DELETE FROM habit_logs WHERE id = :id")
-    suspend fun delete(id: Long)
+    suspend fun delete(id: String)
 
     @Query("SELECT * FROM habit_logs WHERE id = :id")
-    suspend fun get(id: Long): HabitLogEntity?
+    suspend fun get(id: String): HabitLogEntity?
 
-    @Query("SELECT MAX(id) FROM habit_logs")
-    suspend fun lastId(): Long?
-
-    @Query("SELECT * FROM habit_logs WHERE kind = :kind ORDER BY id DESC LIMIT 1")
+    @Query("SELECT * FROM habit_logs WHERE kind = :kind ORDER BY loggedAt DESC, id DESC LIMIT 1")
     suspend fun last(kind: HabitKind): HabitLogEntity?
 
     @Query("SELECT * FROM habit_logs ORDER BY loggedAt")
@@ -360,7 +398,7 @@ interface BodyDao {
     @Query("DELETE FROM body_metrics WHERE epochDay = :epochDay")
     suspend fun deleteByDay(epochDay: Long)
 
-    @Insert
+    @Upsert
     suspend fun insert(metric: BodyMetricEntity)
 
     @Insert
@@ -369,7 +407,40 @@ interface BodyDao {
     @Query("SELECT * FROM body_metrics ORDER BY epochDay")
     suspend fun getAll(): List<BodyMetricEntity>
 
+    @Query("SELECT * FROM body_metrics WHERE id = :id")
+    suspend fun getById(id: String): BodyMetricEntity?
+
+    @Query("DELETE FROM body_metrics WHERE id = :id")
+    suspend fun deleteById(id: String)
+
     @Query("DELETE FROM body_metrics")
+    suspend fun clearAll()
+}
+
+@Dao
+interface SyncChangeDao {
+    @Query("SELECT * FROM sync_changes ORDER BY changedAt")
+    suspend fun getAll(): List<SyncChangeEntity>
+
+    @Query("SELECT * FROM sync_changes WHERE entityType = :entityType AND entityId = :entityId")
+    suspend fun get(entityType: String, entityId: String): SyncChangeEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(change: SyncChangeEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(changes: List<SyncChangeEntity>)
+
+    @Query("DELETE FROM sync_changes WHERE entityType = :entityType AND entityId = :entityId")
+    suspend fun clear(entityType: String, entityId: String)
+
+    @Query(
+        "DELETE FROM sync_changes WHERE entityType = :entityType AND entityId = :entityId " +
+            "AND changedAt = :changedAt",
+    )
+    suspend fun clearIfUnchanged(entityType: String, entityId: String, changedAt: Long)
+
+    @Query("DELETE FROM sync_changes")
     suspend fun clearAll()
 }
 
@@ -385,8 +456,9 @@ interface BodyDao {
         ReminderRuleEntity::class,
         ReminderEventEntity::class,
         HabitLogEntity::class,
+        SyncChangeEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @androidx.room.TypeConverters(Converters::class)
@@ -397,4 +469,5 @@ abstract class BarbellBaseDatabase : androidx.room.RoomDatabase() {
     abstract fun habitDao(): HabitDao
     abstract fun reminderDao(): ReminderDao
     abstract fun bodyDao(): BodyDao
+    abstract fun syncChangeDao(): SyncChangeDao
 }

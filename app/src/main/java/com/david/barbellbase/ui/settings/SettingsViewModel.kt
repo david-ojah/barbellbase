@@ -1,6 +1,7 @@
 package com.david.barbellbase.ui.settings
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,7 @@ import com.david.barbellbase.data.prefs.UnitSystem
 import com.david.barbellbase.data.repo.BackupRepository
 import com.david.barbellbase.data.repo.BodyRepository
 import com.david.barbellbase.data.repo.ResetRepository
+import com.david.barbellbase.data.sync.SyncRepository
 import com.david.barbellbase.domain.Units
 import com.david.barbellbase.reminder.NotificationChannels
 import com.david.barbellbase.reminder.ReminderRepository
@@ -19,8 +21,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,6 +36,14 @@ data class SettingsState(
     val backupName: String = "",
 )
 
+data class SyncUiState(
+    val configured: Boolean = false,
+    val account: String? = null,
+    val busy: Boolean = false,
+    val lastSyncedAt: Long = 0L,
+    val error: String? = null,
+)
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -40,12 +52,19 @@ class SettingsViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val reminderRepository: ReminderRepository,
     private val resetRepository: ResetRepository,
+    private val syncRepository: SyncRepository,
 ) : ViewModel() {
 
     private val flags = MutableStateFlow(Triple(false, true, backupRepository.defaultFileName()))
     private val message = MutableStateFlow<String?>(null)
+    private val _sync = MutableStateFlow(SyncUiState())
 
     val userMessage = message
+    val sync = _sync.asStateFlow()
+
+    init {
+        refreshSync()
+    }
 
     val state = combine(
         settingsRepository.settings,
@@ -71,6 +90,65 @@ class SettingsViewModel @Inject constructor(
 
     fun consumeMessage() {
         message.value = null
+    }
+
+    fun refreshSync() {
+        viewModelScope.launch {
+            _sync.update {
+                it.copy(
+                    configured = syncRepository.isConfigured(),
+                    account = syncRepository.accountEmail(),
+                    lastSyncedAt = settingsRepository.lastSyncedAt(),
+                )
+            }
+        }
+    }
+
+    fun signInIntent(): Intent? =
+        if (syncRepository.isConfigured()) syncRepository.signInIntent() else null
+
+    fun handleSignInResult(data: Intent?) {
+        viewModelScope.launch {
+            _sync.update { it.copy(busy = true, error = null) }
+            syncRepository.completeSignIn(data)
+                .onSuccess { email ->
+                    _sync.update { it.copy(busy = false, account = email) }
+                    syncNow()
+                }
+                .onFailure { error ->
+                    _sync.update {
+                        it.copy(busy = false, error = error.message ?: "Could not sign in")
+                    }
+                }
+        }
+    }
+
+    fun syncNow() {
+        viewModelScope.launch {
+            _sync.update { it.copy(busy = true, error = null) }
+            syncRepository.sync()
+                .onSuccess { summary ->
+                    val last = settingsRepository.lastSyncedAt()
+                    _sync.update {
+                        it.copy(
+                            busy = false,
+                            account = syncRepository.accountEmail(),
+                            lastSyncedAt = last,
+                        )
+                    }
+                    message.value = "Synced: ${summary.uploaded} uploaded, ${summary.downloaded} downloaded"
+                }
+                .onFailure { error ->
+                    _sync.update {
+                        it.copy(busy = false, error = error.message ?: "Sync failed")
+                    }
+                }
+        }
+    }
+
+    fun signOut() {
+        syncRepository.signOut()
+        _sync.update { it.copy(account = null) }
     }
 
     fun setUnits(value: UnitSystem) = launch { settingsRepository.setUnits(value) }

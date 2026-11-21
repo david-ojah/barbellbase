@@ -59,6 +59,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val sync by viewModel.sync.collectAsStateWithLifecycle()
     val message by viewModel.userMessage.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -87,6 +88,10 @@ fun SettingsScreen(
     val importJson = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri: Uri? -> uri?.let(viewModel::importFrom) }
+
+    val googleSignIn = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result -> viewModel.handleSignInResult(result.data) }
 
     Scaffold(
         topBar = {
@@ -303,6 +308,63 @@ fun SettingsScreen(
                 }
             }
 
+            if (sync.configured) {
+                item {
+                    AppCard {
+                        SectionTitle("Cloud sync")
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Sync workouts, routines and settings across every device signed in with the same Google account. The app remains fully usable offline.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        if (sync.account == null) {
+                            OutlinedButton(
+                                onClick = { viewModel.signInIntent()?.let(googleSignIn::launch) },
+                                enabled = !sync.busy,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(if (sync.busy) "Signing in..." else "Sign in with Google")
+                            }
+                        } else {
+                            Text(
+                                "Signed in as ${sync.account}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                "Last sync: " + if (sync.lastSyncedAt > 0L) {
+                                    android.text.format.DateUtils.getRelativeTimeSpanString(sync.lastSyncedAt)
+                                } else {
+                                    "never"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = viewModel::syncNow,
+                                    enabled = !sync.busy,
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(if (sync.busy) "Syncing..." else "Sync now")
+                                }
+                                TextButton(onClick = viewModel::signOut) { Text("Sign out") }
+                            }
+                        }
+                        sync.error?.let { error ->
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                error,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+
             item {
                 AppCard {
                     SectionTitle("Data")
@@ -344,11 +406,11 @@ fun SettingsScreen(
                     SectionTitle("About")
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "BarbellBase 1.0 · offline strength tracker for Android 16",
+                        "BarbellBase 1.0 · offline strength tracker for Android",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
-                        "No account, no cloud, no analytics. Uninstall to delete everything.",
+                        "Offline by default. Optional Google sync. No analytics. Uninstalling removes local data.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

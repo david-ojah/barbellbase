@@ -1,0 +1,11 @@
+# Optional cloud-sync configuration.
+# Copy these keys into local.properties (which is gitignored) and fill in the values.
+# Cloud sync stays disabled while they are blank.
+
+# Firebase project (Project settings -> General -> Your apps)
+firebase.projectId=
+firebase.applicationId=
+firebase.apiKey=
+
+# Web client OAuth ID (Authentication -> Google -> Web SDK configuration)
+google.webClientId=

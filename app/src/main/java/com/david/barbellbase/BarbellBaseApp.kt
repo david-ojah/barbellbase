@@ -1,6 +1,8 @@
 package com.david.barbellbase
 
 import android.app.Application
+import com.david.barbellbase.data.sync.SyncConfig
+import com.david.barbellbase.data.sync.SyncScheduler
 import com.david.barbellbase.di.Seeder
 import com.david.barbellbase.reminder.NotificationChannels
 import com.david.barbellbase.reminder.ReminderReconcileWorker
@@ -20,8 +22,10 @@ class BarbellBaseApp : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
+        SyncConfig.initialize(this)
         super.onCreate()
         NotificationChannels.createAll(this)
+        SyncScheduler.schedule(this)
         appScope.launch {
             seeder.seed()
             ReminderReconcileWorker.enqueue(this@BarbellBaseApp)
